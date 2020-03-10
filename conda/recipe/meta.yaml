@@ -1,0 +1,40 @@
+package:
+  name: py_rsync
+  version: 0.0.0a0.dev0
+
+source:
+  fn: py_rsync-0.0.0a0.dev0.tar.gz
+  url: https://github.com/salotz/py_rsync/releases/download//{{ version }}/{{ name }}-{{ version }}.tar.gz
+  # TODO: way to specify a hole or 
+  sha256:
+
+build:
+  number: 0
+  script: "{{ PYTHON }} -m pip install . -vv"
+  entry_points:
+    - py_rsync = py_rsync.cli:cli
+
+requirements:
+  build:
+    - python
+    - setuptools
+    - wheel
+
+  host:
+    - python
+    
+  run:
+    - python
+    
+
+about:
+  home: https://github.com/salotz/py_rsync
+  license: MIT
+  license_file: LICENSE
+  summary: "Wrapper around rsync command line for building complex commands"
+  doc_url: https://salotz.github.io/py_rsync
+  dev_url: https://github.com/salotz/py_rsync
+
+extra:
+  recipe-maintainers:
+    - salotz
