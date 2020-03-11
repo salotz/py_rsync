@@ -1,21 +1,68 @@
 import dataclasses as dc
 import pkgutil
 from pathlib import Path
-import typing as typ
+from typing import (
+    Optional,
+    Tuple,
+    Generator
+)
 
 from jinja2 import Template
 
 __all__ = [
+    'RSYNC_OPTIONS',
+    'RSYNC_FLAGS',
+    'RSYNC_INFO_OPTS',
+    'RSYNC_KV_OPTS',
     'RsyncEndpoint',
     'RsyncInfoOptions',
-    'RSYNC_INFO_OPTS',
+    'RsyncOptions',
     'RsyncCommand',
+
 ]
 
 
-RSYNC_OPTS = (
-    
+RSYNC_OPTIONS = (
+    # long, short, docstring
+    ('dry-run', 'n', "perform a trial run with no changes made"),
+    ('delete', None, "delete extraneous files from dest dirs"),
+    ('delete-excluded', None, "also delete excluded files from dest dirs"),
+    ('compress', 'z', "compress file data during the transfer"),
+    ('update', 'u', "skip files that are newer on the receiver"),
+    ('archive', 'a', "archive mode; equals -rlptgoD (no -H,-A,-X)"),
+    ('verbose', 'v', "increase verbosity"),
+    ('human-readable', 'h', "output numbers in a human-readable format"),
+    ('itemize-changes', 'i', "output a change-summary for all updates"),
+    ('stats', None, "give some file-transfer stats"),
+    ('backup', 'b', "make backups (see --suffix & --backup-dir)"),
+    ('suffix', None, "backup suffix (default ~ w/o --backup-dir)"),
 )
+"""The supported boolean flag options.
+
+The long-name is canonical and will be validated for use. Use this
+data structure to normalize names.
+
+"""
+
+RSYNC_FLAGS = (
+    'dry-run',
+    'delete',
+    'delete-excluded',
+    'compress',
+    'update',
+    'archive',
+    'verbose',
+    'human-readable',
+    'itemize-changes',
+    'stats',
+    'backup',
+)
+"""Boolean options that require no explicit value. The presence implies 'True'"""
+
+RSYNC_KV_OPTS = (
+    'suffix',
+)
+"""The supported options that require typed values."""
 
 RSYNC_INFO_OPTS = (
         'backup', # Mention files backed up
@@ -43,16 +90,103 @@ RSYNC_INFO_OPTS = (
         'v', # ALL1 = COPY,DEL,FLIST,MISC,NAME,STATS,SYMSAFE
         'none', # ALL0
 )
+"""The specifiers for the 'info' option fields."""
+
+
+@dc.dataclass
+class RsyncInfoOptions():
+
+    flags: Optional[ Tuple[str] ]
+
+    def __iter__(self) -> Generator[str, None, None]:
+        for f in self.flags:
+            yield f
+
+    def is_valid(self) -> bool:
+
+        if len(self.flags) < 1:
+            return False
+        else:
+            return True
+
+@dc.dataclass
+class RsyncOptions():
+
+    flags: Optional[ Tuple[str] ]
+    includes: Optional[ Tuple[str] ]
+    excludes: Optional[ Tuple[str] ]
+    info: Optional[ RsyncInfoOptions ]
+
+    # the key-value options
+    suffix: str = '~'
+
+    @staticmethod
+    def is_flags_valid(flags):
+
+        not_found = [True for _ in flags]
+        for i, flag in enumerate(flags):
+            if flag in RSYNC_FLAGS:
+                not_found[i] = False
+
+        if any(not_found):
+            return False
+        else:
+            return True
+
+    def is_valid(self):
+
+        if not self.is_flags_valid(self.flags):
+            return False
+
+        elif not self.info.is_valid():
+            return False
+
+        else:
+            return True
+
+    def __post_init__(self):
+
+        if not self.is_valid():
+            raise ValueError("Invalid arguments")
+
+    @staticmethod
+    def normalize_flags(flags) -> Tuple[str]:
+
+        flag_aliases = [(long_name, short_name)
+                        for long_name, short_name, description
+                        in RSYNC_FLAGS]
+
+        # Just convert short names to long names, and raise an error
+        # if it isn't recognized
+        normalized_flags = []
+        for flag in flags:
+
+            alias_found = False
+            for long_alias, short_alias in flag_aliases:
+
+                if (flag == long_alias or
+                    flag == short_alias):
+
+                    normalized_flags.append(long_alias)
+                    alias_found = True
+                    break
+
+            if not alias_found:
+                raise ValueError(f"Flag '{flag}' not recognized or supported.")
+
+        return tuple(normalized_flags)
+
+
 
 @dc.dataclass
 class RsyncEndpoint():
 
     path: Path
-    user: str = None
-    host: str = None
+    user: Optional[str]
+    host: Optional[str]
 
 
-    def is_valid(self):
+    def is_valid(self) -> bool:
 
         if self.path is None:
             return False
@@ -64,39 +198,24 @@ class RsyncEndpoint():
         else:
             return True
 
-
-@dc.dataclass
-class RsyncInfoOptions():
-
-    flags: typ.Tuple[bool] = ()
-
-    def __iter__(self):
-        for f in self.flags:
-            yield f
-
-    def is_valid(self):
-
-        if len(self.flags) < 1:
-            return False
-
-def get_rsync_template():
+def get_rsync_template() -> str:
+    """Load the template text for the rsync command."""
 
     path = "rsync_template/rsync_command.txt.j2"
     return pkgutil.get_data(__name__,
                             path)\
                   .decode()
 
-@dc.dataclass()
+
+@dc.dataclass
 class RsyncCommand():
     """Specifications for an rsync invocation."""
 
     src: RsyncEndpoint
     dest: RsyncEndpoint
-    info: RsyncInfoOptions = None
-    includes: tuple = ()
-    excludes: tuple = ()
+    options: Optional[RsyncOptions]
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
 
         if not self.src.is_valid():
             raise ValueError("Invalid src endpoint")
@@ -104,13 +223,14 @@ class RsyncCommand():
         if not self.dest.is_valid():
             raise ValueError("Invalid dest endpoint")
 
-
-    def render(self):
+    def render(self) -> str:
 
         d = {
-            'includes' : self.includes,
-            'excludes' : self.excludes,
-            'info' : self.info,
+            'flags' : self.options.flags,
+            # TODO: Key-values
+            'includes' : self.options.includes,
+            'excludes' : self.options.excludes,
+            'info' : self.options.info,
             'src' : self.src,
             'dest' : self.dest
         }
@@ -122,83 +242,13 @@ class RsyncCommand():
 
         return result
 
+default_options = {
+    'flags' : (
+        'archive',
+        'verbose',
+        'human-readable', 'human-readable',
+        'stats',
+        'itemize-changes'
+    ),
 
-def gen_rsync_command(source_url, target_url,
-                      includes=None, excludes=None,
-                      dry=True,
-                      delete=False,
-                      delete_excluded=False,
-                      compress=False,
-                      safe=True,
-                      force_update=False,):
-
-    if includes is None:
-        includes = []
-
-    if excludes is None:
-        excludes = []
-
-    # make the strings for the command line invocation
-    exclude_str = ' '.join([EXCLUDE_OPT_TEMPLATE.format(exclude)
-                             for exclude in excludes])
-    include_str = ' '.join([INCLUDE_OPT_TEMPLATE.format(include)
-                             for include in includes])
-
-    if dry:
-        dry_str = '-n'
-    else:
-        dry_str = ''
-
-    # if we have specified 1-way sync then delete files at the target,
-    # we always delete excluded files
-    if delete:
-        delete_str = '--delete'
-    else:
-        delete_str = ''
-
-    # if we are specifying to clean the target then delete the
-    # excluded files, if not it will leave them alone like git and
-    # cache stuff
-    if delete_excluded:
-        delete_excluded_str = '--delete-excluded'
-    else:
-        delete_excluded_str = ''
-
-
-    if compress:
-        compress_str = "-z"
-    else:
-        compress_str = ""
-
-    # if we want the safe mode we set a backup and use the suffix '.rsync_backup'
-    if safe:
-        backup_str = "--backup --suffix='.rsync_backup'"
-    else:
-        backup_str = ""
-
-    # if we are forcing update, don't update files that are newer on
-    # receiver, the default mode is "safe" in the sense that if they
-    # were modified those changes won't get overwritten. If you want
-    # another "safe" option but still try to force, then use "safe"
-    # option which makes backups
-    if force_update:
-        force_update_str = ""
-    else:
-        force_update_str = "--update"
-
-    # make the CLI invocation
-    command = RSYNC_RUN_TEMPLATE.format(
-        exclude=exclude_str,
-        include=include_str,
-        source=source_url,
-        target=target_url,
-        dry=dry_str,
-        delete=delete_str,
-        delete_excluded=delete_excluded_str,
-        info='',
-        compress=compress_str,
-        backup=backup_str,
-        force_update=force_update_str,
-    )
-
-    return command
+}

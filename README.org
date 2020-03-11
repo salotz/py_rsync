@@ -1,4 +1,19 @@
-* py_rsync
+* py_rsync: A pythonic high-level wrapper for ~rsync~
+
+While ~rsync~ seems like a very simple tool it has a large number of
+advanced and complex features. So much so that I find using and
+writing command line invocations (beyond very simple ones) to be quite
+complicated and I start to want to actually script the generation of
+them. This is the niche this library will hopefully provide.
+
+While there are some other C-level libraries and alternative
+implementations of the core delta-compression rsync algorithm out
+there none are as fully featured as the standard unix command line
+application. Ideally a pure python or wrapped C/C++ library that
+includes all this functionality would be preferrable but even becoming
+fluent in the entire interface is a challenge, that hopefully this
+library makes easier for future improvements in data-syncing libraries.
+
 
 
 ** Docs and Info
