@@ -14,10 +14,10 @@ __all__ = [
     'RSYNC_FLAGS',
     'RSYNC_INFO_OPTS',
     'RSYNC_KV_OPTS',
-    'RsyncEndpoint',
-    'RsyncInfoOptions',
-    'RsyncOptions',
-    'RsyncCommand',
+    'Endpoint',
+    'InfoOptions',
+    'Options',
+    'Command',
 
 ]
 
@@ -94,7 +94,7 @@ RSYNC_INFO_OPTS = (
 
 
 @dc.dataclass
-class RsyncInfoOptions():
+class InfoOptions():
 
     flags: Optional[ Tuple[str] ]
 
@@ -110,12 +110,12 @@ class RsyncInfoOptions():
             return True
 
 @dc.dataclass
-class RsyncOptions():
+class Options():
 
     flags: Optional[ Tuple[str] ]
     includes: Optional[ Tuple[str] ]
     excludes: Optional[ Tuple[str] ]
-    info: Optional[ RsyncInfoOptions ]
+    info: Optional[ InfoOptions ]
 
     # the key-value options
     suffix: str = '~'
@@ -179,7 +179,7 @@ class RsyncOptions():
 
 
 @dc.dataclass
-class RsyncEndpoint():
+class Endpoint():
 
     path: Path
     user: Optional[str]
@@ -208,12 +208,12 @@ def get_rsync_template() -> str:
 
 
 @dc.dataclass
-class RsyncCommand():
+class Command():
     """Specifications for an rsync invocation."""
 
-    src: RsyncEndpoint
-    dest: RsyncEndpoint
-    options: Optional[RsyncOptions]
+    src: Endpoint
+    dest: Endpoint
+    options: Optional[Options]
 
     def __post_init__(self) -> None:
 
