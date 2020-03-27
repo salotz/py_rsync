@@ -8,6 +8,7 @@ from typing import (
 )
 
 from jinja2 import Template
+from hyperlink import URL
 
 __all__ = [
     'RSYNC_OPTIONS',
@@ -181,18 +182,45 @@ class Options():
 @dc.dataclass
 class Endpoint():
 
-    path: Path
-    user: Optional[str]
-    host: Optional[str]
+    url: URL
 
+    @property
+    def path(self):
+        return '/' + '/'.join(self.url.path)
+
+    @classmethod
+    def construct(cls,
+                  host=None,
+                  user=None,
+                  path=None,
+    ):
+
+        # test whether the path is rooted
+        rooted = path.startswith('/')
+
+        # the path must be rooted when a remote host is given
+        if host is not None and not rooted:
+            raise ValueError("Path must be a fully rooted path when a host is given")
+
+        # get the sections of the path
+        path_segs = path.strip('/').split('/')
+
+        if user is None:
+            user = ''
+
+        url = URL(
+            scheme='rsync',
+            host=host,
+            userinfo=user,
+            rooted=rooted,
+            path=path_segs,
+        )
+
+        return Endpoint(url)
 
     def is_valid(self) -> bool:
 
-        if self.path is None:
-            return False
-
-        elif (self.user is not None and
-              self.host is None):
+        if self.url.scheme != 'rsync':
             return False
 
         else:
@@ -225,15 +253,22 @@ class Command():
 
     def render(self) -> str:
 
-        d = {
-            'flags' : self.options.flags,
-            # TODO: Key-values
-            'includes' : self.options.includes,
-            'excludes' : self.options.excludes,
-            'info' : self.options.info,
-            'src' : self.src,
-            'dest' : self.dest
-        }
+        if self.options is None:
+            d = {
+                'src' : self.src,
+                'dest' : self.dest
+            }
+
+        else:
+            d = {
+                'flags' : self.options.flags,
+                # TODO: Key-values
+                'includes' : self.options.includes,
+                'excludes' : self.options.excludes,
+                'info' : self.options.info,
+                'src' : self.src,
+                'dest' : self.dest
+            }
 
         template = Template(get_rsync_template())
         result = template.render(**d,

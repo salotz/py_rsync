@@ -1,5 +1,5 @@
 rsync \
-    {%- for flag in flags %}
+    {% for flag in flags %}
     --{{flag}} \
     {%- endfor -%}
     {%- if info %}
@@ -11,6 +11,6 @@ rsync \
     {%- for spec in excludes %}
     --exclude='{{spec}}' \
     {% endfor -%}
-    '{% if src.user %}{{src.user}}@{% endif %}{% if src.host %}{{src.host}}:{% endif %}{{src.path}}/' \
-    '{% if dest.user %}{{dest.user}}@{% endif %}{% if dest.host %}{{dest.host}}:{% endif %}{{dest.path}}'
+    '{% if src.url.user %}{{src.url.user}}@{% endif %}{% if src.url.host %}{{src.url.host}}:{% endif %}{{src.path}}/' \
+    '{% if dest.url.user %}{{dest.url.user}}@{% endif %}{% if dest.url.host %}{{dest.url.host}}:{% endif %}{{dest.path}}'
 
