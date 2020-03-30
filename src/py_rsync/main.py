@@ -4,7 +4,8 @@ from pathlib import Path
 from typing import (
     Optional,
     Tuple,
-    Generator
+    Generator,
+    Mapping,
 )
 
 from jinja2 import Template
@@ -25,18 +26,32 @@ __all__ = [
 
 RSYNC_OPTIONS = (
     # long, short, docstring
-    ('dry-run', 'n', "perform a trial run with no changes made"),
-    ('delete', None, "delete extraneous files from dest dirs"),
-    ('delete-excluded', None, "also delete excluded files from dest dirs"),
-    ('compress', 'z', "compress file data during the transfer"),
-    ('update', 'u', "skip files that are newer on the receiver"),
+    # non-essential options
     ('archive', 'a', "archive mode; equals -rlptgoD (no -H,-A,-X)"),
     ('verbose', 'v', "increase verbosity"),
     ('human-readable', 'h', "output numbers in a human-readable format"),
     ('itemize-changes', 'i', "output a change-summary for all updates"),
     ('stats', None, "give some file-transfer stats"),
+
+
+    # transport options
+    ('dry-run', 'n', "perform a trial run with no changes made"),
+    ('compress', 'z', "compress file data during the transfer"),
     ('backup', 'b', "make backups (see --suffix & --backup-dir)"),
     ('suffix', None, "backup suffix (default ~ w/o --backup-dir)"),
+
+    # sync options
+    ('delete', None, "delete extraneous files from dest dirs"),
+    ('delete-excluded', None, "also delete excluded files from dest dirs"),
+    ('update', 'u', "skip files that are newer on the receiver"),
+    ('ignore-existing', None, "skip updating files that exist on receiver"),
+    ('existing', None, "skip creating new files on receiver"),
+
+    # misc.
+
+    # this should only be necessary when you aren't using a delete
+    # mode
+    ('force', None, "force deletion of dirs even if not empty"),
 )
 """The supported boolean flag options.
 
@@ -103,13 +118,6 @@ class InfoOptions():
         for f in self.flags:
             yield f
 
-    def is_valid(self) -> bool:
-
-        if len(self.flags) < 1:
-            return False
-        else:
-            return True
-
 @dc.dataclass
 class Options():
 
@@ -117,6 +125,7 @@ class Options():
     includes: Optional[ Tuple[str] ]
     excludes: Optional[ Tuple[str] ]
     info: Optional[ InfoOptions ]
+    kv: Optional[ Mapping[str, str] ]
 
     # the key-value options
     suffix: str = '~'
@@ -124,31 +133,36 @@ class Options():
     @staticmethod
     def is_flags_valid(flags):
 
+        # if no flags we okay
+        if len(flags) < 1:
+            return True
+
         not_found = [True for _ in flags]
         for i, flag in enumerate(flags):
-            if flag in RSYNC_FLAGS:
+            if flag not in RSYNC_FLAGS:
                 not_found[i] = False
 
-        if any(not_found):
+        if not any(not_found):
             return False
         else:
             return True
 
-    def is_valid(self):
+    # def is_valid(self):
 
-        if not self.is_flags_valid(self.flags):
-            return False
 
-        elif not self.info.is_valid():
-            return False
+    #     if not self.is_flags_valid(self.flags):
+    #         return False
 
-        else:
-            return True
+    #     elif not self.info.is_valid():
+    #         return False
 
-    def __post_init__(self):
+    #     else:
+    #         return True
 
-        if not self.is_valid():
-            raise ValueError("Invalid arguments")
+    # def __post_init__(self):
+
+    #     if not self.is_valid():
+    #         raise ValueError("Invalid arguments")
 
     @staticmethod
     def normalize_flags(flags) -> Tuple[str]:
@@ -253,22 +267,31 @@ class Command():
 
     def render(self) -> str:
 
-        if self.options is None:
-            d = {
+        d = {
                 'src' : self.src,
                 'dest' : self.dest
             }
 
-        else:
+        if self.options:
             d = {
                 'flags' : self.options.flags,
-                # TODO: Key-values
                 'includes' : self.options.includes,
                 'excludes' : self.options.excludes,
-                'info' : self.options.info,
-                'src' : self.src,
-                'dest' : self.dest
+                **d
             }
+
+            if self.options.info:
+                d = {
+                    'info' : self.options.info,
+                    **d,
+                }
+
+            if self.options.kv:
+                d = {
+                    'kv' : self.options.kv,
+                    **d,
+                }
+
 
         template = Template(get_rsync_template())
         result = template.render(**d,

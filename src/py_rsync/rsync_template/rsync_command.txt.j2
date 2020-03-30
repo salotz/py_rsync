@@ -1,16 +1,9 @@
-rsync \
-    {% for flag in flags %}
-    --{{flag}} \
-    {%- endfor -%}
-    {%- if info %}
-    --info={{ info.flags|join(',') }} \
-    {%- endif -%}
-    {%- for spec in includes %}
-    --include='{{spec}}' \
-    {%- endfor -%}
-    {%- for spec in excludes %}
-    --exclude='{{spec}}' \
-    {% endfor -%}
+rsync \{% for flag in flags %}
+    --{{flag}} \{% endfor %}{% for key, value in kv.items() %}
+    --{{key}}={{value}} \{% endfor %}{% if info %}
+    --info={{ info.flags|join(',') }} \{% endif %}{% for spec in includes %}
+    --include='{{spec}}' \{% endfor %}{% for spec in excludes %}
+    --exclude='{{spec}}' \{% endfor %}
     '{% if src.url.user %}{{src.url.user}}@{% endif %}{% if src.url.host %}{{src.url.host}}:{% endif %}{{src.path}}/' \
     '{% if dest.url.user %}{{dest.url.user}}@{% endif %}{% if dest.url.host %}{{dest.url.host}}:{% endif %}{{dest.path}}'
 
