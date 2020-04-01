@@ -386,7 +386,7 @@ def publish_test_pypi(cx,
 
     cx.run("twine upload "
            "--non-interactive "
-           f"--repository pypi "
+           f"--repository pypi_test "
            f"--config-file {TESTING_PYPIRC} "
            "dist/*")
 
