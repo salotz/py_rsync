@@ -10,6 +10,7 @@ twine
 pip-tools
 pipdeptree
 
+
 # interactive and debugging
 ipython
 pdbpp
@@ -18,7 +19,8 @@ remote-pdb
 # utilities
 # bumpversion
 
-# task running
+# tooling
+jubeo
 invoke
 fabric
 
