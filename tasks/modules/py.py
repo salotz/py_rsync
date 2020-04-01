@@ -5,6 +5,8 @@ from ..config import (
     BENCHMARK_STORAGE_URL,
     ORG_DOCS_SOURCES,
     RST_DOCS_SOURCES,
+    TESTING_PYPIRC,
+    PYPIRC,
 )
 
 import sys
@@ -32,23 +34,23 @@ from pathlib import Path
 #     'glossary',
 #     'tutorials/index',
 # ]
+# PYPIRC = "$HOME/.pypirc"
+# TESTING_PYPIRC = "$HOME/.test-pypirc"
 
 ## CONSTANTS
 
-TESTING_INDEX_URL = "https://test.pypi.org/legacy/"
-PYPI_INDEX_URL = "https://upload.pypi.org/legacy/"
 
 BENCHMARK_STORAGE_URI="\"file://{}\"".format(BENCHMARK_STORAGE_URL)
 
 
-def project_slug(cx):
+def project_slug():
 
     try:
         from ..config import PROJECT_SLUG
     except ImportError:
         print("You must set the 'PROJECT_SLUG' in conifig.py to use this")
     else:
-        return dirname
+        return PROJECT_SLUG
 
 @task
 def clean_dist(cx):
@@ -159,7 +161,7 @@ def docs_build(cx):
     with cx.cd('sphinx'):
 
         # build the API Documentation
-        cx.run("sphinx-apidoc -f --separate --private --ext-autodoc --module-first --maxdepth 1 -o api ../src/PROJECT_SLUG")
+        cx.run(f"sphinx-apidoc -f --separate --private --ext-autodoc --module-first --maxdepth 1 -o api ../src/{project_slug()}")
 
         # then do the sphinx build process
         cx.run("sphinx-build -b html -E -a -j 6 . ./_build/html/")
@@ -254,7 +256,7 @@ def lint(cx):
     cx.run("mkdir -p metrics/lint")
 
     cx.run("rm -f metrics/lint/flake8.txt")
-    cx.run("flake8 --output-file=metrics/lint/flake8.txt src/PROJECT_SLUG")
+    cx.run(f"flake8 --output-file=metrics/lint/flake8.txt src/{project_slug()}")
 
 @task
 def complexity(cx):
@@ -262,13 +264,13 @@ def complexity(cx):
 
     cx.run("mkdir -p metrics/code_quality")
 
-    cx.run("lizard -o metrics/code_quality/lizard.csv src/PROJECT_SLUG")
-    cx.run("lizard -o metrics/code_quality/lizard.html src/PROJECT_SLUG")
+    cx.run(f"lizard -o metrics/code_quality/lizard.csv src/{project_slug()}")
+    cx.run(f"lizard -o metrics/code_quality/lizard.html src/{project_slug()}")
 
     # SNIPPET: annoyingly opens the browser
 
     # make a cute word cloud of the things used
-    # cx.run("(cd metrics/code_quality; lizard -EWordCount src/PROJECT_SLUG > /dev/null)")
+    # cx.run("(cd metrics/code_quality; lizard -EWordCount src/project_slug() > /dev/null)")
 
 @task(pre=[complexity, lint])
 def quality(cx):
@@ -322,21 +324,7 @@ def version_which(cx):
     """Tell me what version the project is at."""
 
     # get the current version
-    cx.run("python -m {PROJECT_SLUG}._print_version")
-
-@task
-def release(cx):
-
-    # SNIPPET
-    # cx.run("python -m wumpus.version")
-
-    print("Releasing: ", VERSION)
-
-    # TODO import from git module
-    release_tag(cx, release=VERSION)
-
-    # IDEA, TODO: handle the manual checklist of things
-
+    cx.run(f"python -m {project_slug()}._print_version")
 
 ### Packaging
 
@@ -390,18 +378,23 @@ def build(cx):
 
 
 @task(pre=[clean_dist, build_sdist])
-def publish_test_pypi(cx, version=None):
+def publish_test_pypi(cx,
+                      version=None,
+):
 
     assert version is not None
 
     cx.run("twine upload "
-           f"--repository-url {TESTING_INDEX_URL} "
+           "--non-interactive "
+           f"--repository pypi "
+           f"--config-file {TESTING_PYPIRC} "
            "dist/*")
 
 @task(pre=[clean_dist, update_tools, build_sdist])
 def publish_test(cx):
 
-    publish_test_pypi(cx, version=VERSION)
+    publish_test_pypi(cx,
+                      version=VERSION)
 
 # PyPI
 
@@ -412,7 +405,9 @@ def publish_pypi(cx, version=None):
     assert version is not None
 
     cx.run(f"twine upload "
-           f"--repository-url {PYPI_INDEX_URL} "
+           "--non-interactive "
+           "--repository pypi "
+           f"--config-file {PYPIRC} "
            f"dist/*")
 
 
@@ -423,8 +418,6 @@ def publish_pypi(cx, version=None):
 #     pass
 
 @task(pre=[clean_dist, update_tools, build])
-def publish(cx, version=None):
+def publish(cx):
 
-    # TODO: import the git module
-    publish_tags(cx, version=VERSION)
     publish_pypi(cx, version=VERSION)

@@ -31,18 +31,18 @@ def init(cx):
 
 
 @task
-def publish_tags(cx):
+def publish(cx):
 
-    tag_string = VCS_RELEASE_TAG_TEMPLATE.format(CURRENT_VERSION)
+    tag_string = VCS_RELEASE_TAG_TEMPLATE.format(VERSION)
 
     cx.run(f"git push origin {tag_string}")
 
 
 @task
-def release_tag(cx, release=None):
+def release(cx):
 
-    assert release is not None, "Release tag string must be given"
+    tag_string = VCS_RELEASE_TAG_TEMPLATE.format(VERSION)
 
-    tag_string = VCS_RELEASE_TAG_TEMPLATE.format(release)
+    print("Releasing: ", VERSION, "with tag: ", tag_string)
 
     cx.run(f"git tag -a {tag_string} -m 'See the changelog for details'")

@@ -54,3 +54,5 @@ RST_DOCS_SOURCES = [
 ]
 """Which info pages are in raw rst"""
 
+PYPIRC="$HOME/.pypirc"
+TESTING_PYPIRC="$HOME/.pypirc"

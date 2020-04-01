@@ -17,7 +17,7 @@ def ls(cx):
     for clean_expr in CLEAN_EXPRESSIONS:
         cx.run('find . -type f -name {} -print'.format(clean_expr))
 
-@task(pre=[ls])
+@task(pre=[ls], default=True)
 def clean(cx):
 
     print("Deleting Targets")
