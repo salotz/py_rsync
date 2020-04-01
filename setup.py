@@ -19,6 +19,7 @@ import itertools as it
 # the basic needed requirements for a package
 base_requirements = [
     'jinja2',
+    'hyperlink',
 ]
 
 # extras requirements list
