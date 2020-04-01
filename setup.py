@@ -38,7 +38,7 @@ all_requirements = it.chain.from_iterable(_all_requirements)
 
 setup(
     name='py_rsync',
-    version='0.0.0a0.dev0',
+    version='0.0.1a0.dev0',
     author="Samuel D. Lotz",
     author_email="samuel.lotz@salotz.info",
     description="Wrapper around rsync command line for building complex commands",
@@ -69,7 +69,7 @@ setup(
 
     entry_points={
         'console_scripts' : [
-            'py_rsync=py_rsync.cli:cli',
+            # 'py_rsync=py_rsync.cli:cli',
         ]
     },
 

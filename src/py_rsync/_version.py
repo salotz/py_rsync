@@ -19,4 +19,4 @@
 
 # __version__ = f"{breakage}.{regression}.{growth}{prerelease_type}{prerelease_number}.dev{dev}.post{postrelease}"
 
-__version__ = '0.0.0a0.dev0'
+__version__ = '0.0.1a0.dev0'

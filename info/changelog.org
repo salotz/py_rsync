@@ -16,14 +16,18 @@ See the git commit log history for full details.
 *** Growth
 
 
+** [0.0.1a0.dev0] - 2020-03-09
+
+First functional release.
+
+Doesn't support all rsync options, however some of the most useful
+ones are included.
+
+Endpoints use the hyperlink URL objects.
+
 ** [0.0.0a0.dev0] - 2020-03-09
 
-*** Breakages
-
-*** Regressions
-
-*** Growth
-
+Prehistory
 
 
 

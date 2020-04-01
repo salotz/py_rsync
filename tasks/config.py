@@ -7,4 +7,5 @@ from .sysconfig import *
 ## Customize these for all features
 
 PROJECT_SLUG = "py_rsync"
+VERSION="0.0.1a0.dev0"
 
