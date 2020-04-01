@@ -209,10 +209,11 @@ def deps_pin(cx, name=DEFAULT_ENV):
                  name=name,
                  upgrade=False)
 
-    deps_conda_pin(cx,
-                   name=name,
-                   upgrade=False,
-                   optional=True,)
+    if ENV_METHOD == 'conda':
+        deps_conda_pin(cx,
+                       name=name,
+                       upgrade=False,
+                       optional=True,)
 
 @task
 def deps_pin_update(cx, name=DEFAULT_ENV):
@@ -222,10 +223,12 @@ def deps_pin_update(cx, name=DEFAULT_ENV):
                     upgrade=True,
     )
 
-    deps_conda_pin(cx,
-                      name=name,
-                      optional=True,
-                      upgrade=True)
+    if ENV_METHOD == 'conda':
+
+        deps_conda_pin(cx,
+                       name=name,
+                       optional=True,
+                       upgrade=True)
 
 
 ### Environments
